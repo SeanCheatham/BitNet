@@ -1,28 +1,12 @@
-import os
-import sys
-import signal
-import platform
 import argparse
-import subprocess
 
-def run_command(command, shell=False):
-    """Run a system command and ensure it succeeds."""
-    try:
-        subprocess.run(command, shell=shell, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Error occurred while running command: {e}")
-        sys.exit(1)
+from utils.common import run_command, find_binary, setup_signal_handler
+
 
 def run_inference():
-    build_dir = "build"
-    if platform.system() == "Windows":
-        main_path = os.path.join(build_dir, "bin", "Release", "llama-cli.exe")
-        if not os.path.exists(main_path):
-            main_path = os.path.join(build_dir, "bin", "llama-cli")
-    else:
-        main_path = os.path.join(build_dir, "bin", "llama-cli")
+    main_path = find_binary("llama-cli")
     command = [
-        f'{main_path}',
+        main_path,
         '-m', args.model,
         '-n', str(args.n_predict),
         '-t', str(args.threads),
@@ -36,13 +20,9 @@ def run_inference():
         command.append("-cnv")
     run_command(command)
 
-def signal_handler(sig, frame):
-    print("Ctrl+C pressed, exiting...")
-    sys.exit(0)
 
 if __name__ == "__main__":
-    signal.signal(signal.SIGINT, signal_handler)
-    # Usage: python run_inference.py -p "Microsoft Corporation is an American multinational corporation and technology company headquartered in Redmond, Washington."
+    setup_signal_handler()
     parser = argparse.ArgumentParser(description='Run inference')
     parser.add_argument("-m", "--model", type=str, help="Path to model file", required=False, default="models/bitnet_b1_58-3B/ggml-model-i2_s.gguf")
     parser.add_argument("-n", "--n-predict", type=int, help="Number of tokens to predict when generating text", required=False, default=128)
