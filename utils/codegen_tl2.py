@@ -677,35 +677,20 @@ def get_three_k_two_k(K, bk):
     return two_k, three_k
 
 if __name__ == "__main__":
-    ModelShapeDict = {
-        "bitnet_b1_58-large"                : [[1536, 4096],
-                                               [1536, 1536],
-                                               [4096, 1536]],
-        "bitnet_b1_58-3B"                   : [[3200, 8640],
-                                               [3200, 3200],
-                                               [8640, 3200]],
-        "Llama3-8B-1.58-100B-tokens"        : [[14336, 4096],
-                                               [4096, 14336],
-                                               [1024, 4096],
-                                               [4096, 4096]],
-        "BitNet-2B-4T"                      : [[6912, 2560],
-                                               [2560, 6912],
-                                               [2560, 2560],
-                                               [640, 2560]]
-    }
+    from model_shapes import MODEL_SHAPES
 
     parser = argparse.ArgumentParser(description='gen impl')
-    parser.add_argument('--model',default="input", type=str, dest="model", 
-                        help="choose from bitnet_b1_58-large/bitnet_b1_58-3B/Llama3-8B-1.58-100B-tokens.")
-    parser.add_argument('--BM',default="input", type=str,
+    parser.add_argument('--model', default="input", type=str, dest="model",
+                        help="choose from: " + "/".join(MODEL_SHAPES.keys()))
+    parser.add_argument('--BM', default="input", type=str,
                         help="block length when cutting one weight (M, K) into M / BM weights (BM, K).")
-    parser.add_argument('--BK',default="input", type=str,
+    parser.add_argument('--BK', default="input", type=str,
                         help="block length when cutting one weight (M, K) into K / BK weights (M, BK).")
-    parser.add_argument('--bm',default="input", type=str,
+    parser.add_argument('--bm', default="input", type=str,
                         help="using simd instructions to compute (bm, 192 / bm) in one block")
     args = parser.parse_args()
 
-    kernel_shapes = ModelShapeDict[args.model]
+    kernel_shapes = MODEL_SHAPES[args.model]
 
     BM_list = [int(item) for item in args.BM.split(',')]
     BK_list = [int(item) for item in args.BK.split(',')]

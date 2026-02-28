@@ -318,7 +318,7 @@ void preprocessor_k(void* B, void* LUT_Scales, void* QLUT) {{\n\
 }}\n"
     return kernel_code
 
-def gen_transform_code(kernel_shape):
+def gen_transform_code(kernel_shapes):
     kernel_code = "\n\
 void ggml_bitnet_transform_tensor(struct ggml_tensor * tensor, float scale) {\n\
     if (!(is_type_supported(tensor->type) && tensor->backend == GGML_BACKEND_TYPE_CPU && tensor->extra == nullptr)) {\n\
@@ -367,35 +367,20 @@ void ggml_bitnet_transform_tensor(struct ggml_tensor * tensor, float scale) {\n\
     return kernel_code
 
 if __name__ == "__main__":
-    ModelShapeDict = {
-        "bitnet_b1_58-large"                : [[1536, 4096],
-                                               [1536, 1536],
-                                               [4096, 1536]],
-        "bitnet_b1_58-3B"                   : [[3200, 8640],
-                                               [3200, 3200],
-                                               [8640, 3200]],
-        "Llama3-8B-1.58-100B-tokens"        : [[14336, 4096],
-                                               [4096, 14336],
-                                               [1024, 4096],
-                                               [4096, 4096]],
-        "BitNet-2B-4T"                      : [[6912, 2560],
-                                               [2560, 6912],
-                                               [2560, 2560],
-                                               [640, 2560]]
-    }
-    
+    from model_shapes import MODEL_SHAPES
+
     parser = argparse.ArgumentParser(description='gen impl')
-    parser.add_argument('--model',default="input", type=str, dest="model", 
-                        help="choose from bitnet_b1_58-large/bitnet_b1_58-3B/Llama3-8B-1.58-100B-tokens.")
-    parser.add_argument('--BM',default="input", type=str,
+    parser.add_argument('--model', default="input", type=str, dest="model",
+                        help="choose from: " + "/".join(MODEL_SHAPES.keys()))
+    parser.add_argument('--BM', default="input", type=str,
                         help="block length when cutting one weight (M, K) into M / BM weights (BM, K).")
-    parser.add_argument('--BK',default="input", type=str,
+    parser.add_argument('--BK', default="input", type=str,
                         help="block length when cutting one weight (M, K) into K / BK weights (M, BK).")
-    parser.add_argument('--bm',default="input", type=str,
+    parser.add_argument('--bm', default="input", type=str,
                         help="using simd instructions to compute (bm, 256 / bm) in one block")
     args = parser.parse_args()
 
-    kernel_shapes = ModelShapeDict[args.model]
+    kernel_shapes = MODEL_SHAPES[args.model]
 
     BM_list = [int(item) for item in args.BM.split(',')]
     BK_list = [int(item) for item in args.BK.split(',')]
