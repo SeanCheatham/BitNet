@@ -318,9 +318,10 @@ def main():
         configurations = []
         while True:
             print("\nEnter configuration (or 'done' to finish):")
-            act = input("ACT_PARALLEL (y/n): ").strip().lower() == 'y'
-            if input == 'done':
+            user_input = input("ACT_PARALLEL (y/n, or 'done' to finish): ").strip().lower()
+            if user_input == 'done':
                 break
+            act = user_input == 'y'
             row = int(input("ROW_BLOCK_SIZE: "))
             col = int(input("COL_BLOCK_SIZE: "))
             par = int(input("PARALLEL_SIZE: "))
