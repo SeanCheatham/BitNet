@@ -954,7 +954,7 @@ class LlamaModel(Model):
 
 @Model.register("BitNetForCausalLM")
 class BitnetModel(Model):
-    model_arch = gguf.MODEL_ARCH.BITNET
+    model_arch = gguf.MODEL_ARCH.BITNET_25
 
     def set_vocab(self):
         try:
