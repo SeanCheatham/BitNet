@@ -12,16 +12,11 @@
 #if defined(GGML_BITNET_ARM_TL1)
 
 void ggml_bitnet_init(void) {
-    // LOG(INFO) << "ggml_bitnet_init";
-
     if (initialized) {
         return;
     }
     initialized = true;
 
-    // if (wrapper == nullptr) {
-    //     wrapper = new BITNET::BITNETGeMMWrapper<bitnet_bitnet_float_type>();
-    // }
     if (bitnet_tensor_extras == nullptr) {
         bitnet_tensor_extras = new bitnet_tensor_extra[GGML_BITNET_MAX_NODES];
     }
@@ -29,18 +24,13 @@ void ggml_bitnet_init(void) {
 }
 
 void ggml_bitnet_free(void) {
-    // LOG(INFO) << "ggml_bitnet_free";
-
     if (!initialized) {
         return;
     }
     initialized = false;
 
-    // delete wrapper;
-    // wrapper = nullptr;
     for (size_t i = 0; i < bitnet_tensor_extras_index; i++) {
-        // aligned_free(bitnet_tensor_extras[i].qweights);
-        // aligned_free(bitnet_tensor_extras[i].scales);
+        aligned_free(bitnet_tensor_extras[i].scales);
     }
     delete[] bitnet_tensor_extras;
     bitnet_tensor_extras = nullptr;
@@ -96,16 +86,11 @@ int ggml_bitnet_get_type_bits(enum ggml_type type) {
 #endif
 #if defined(GGML_BITNET_X86_TL2)
 void ggml_bitnet_init(void) {
-    // LOG(INFO) << "ggml_bitnet_init";
-
     if (initialized) {
         return;
     }
     initialized = true;
 
-    // if (wrapper == nullptr) {
-    //     wrapper = new BITNET::BITNETGeMMWrapper<bitnet_bitnet_float_type>();
-    // }
     if (bitnet_tensor_extras == nullptr) {
         bitnet_tensor_extras = new bitnet_tensor_extra[GGML_BITNET_MAX_NODES];
     }
@@ -113,18 +98,13 @@ void ggml_bitnet_init(void) {
 }
 
 void ggml_bitnet_free(void) {
-    // LOG(INFO) << "ggml_bitnet_free";
-
     if (!initialized) {
         return;
     }
     initialized = false;
 
-    // delete wrapper;
-    // wrapper = nullptr;
     for (size_t i = 0; i < bitnet_tensor_extras_index; i++) {
-        // aligned_free(bitnet_tensor_extras[i].qweights);
-        // aligned_free(bitnet_tensor_extras[i].scales);
+        aligned_free(bitnet_tensor_extras[i].scales);
     }
     delete[] bitnet_tensor_extras;
     bitnet_tensor_extras = nullptr;
