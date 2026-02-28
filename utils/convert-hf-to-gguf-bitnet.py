@@ -655,7 +655,9 @@ def preprocess_weights_tl2(
                          two_weight,
                          final_weight)
     weight = np.array(final_weight, dtype=np.uint8).reshape(-1)
-    weight = np.pad(weight, (0, (K - 256) * M // 3 * 5 // 8 + 256 * M // 2 * 4 // 8 -
+    two_k = K % BY if K % BY != 0 else 0
+    three_k = K - two_k
+    weight = np.pad(weight, (0, three_k * M // 3 * 5 // 8 + two_k * M // 2 * 4 // 8 -
                              weight.shape[0]), mode='constant', constant_values=0)
     return weight
 

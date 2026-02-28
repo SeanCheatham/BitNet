@@ -90,7 +90,8 @@ inline int32_t per_tensor_quant(int k, void* lut_scales_, void* b_) {\n\
     __m128 max1 = _mm_max_ps(_mm256_extractf128_ps(max_vec, 1), _mm256_castps256_ps128(max_vec));\n\
     max1 = _mm_max_ps(max1, _mm_movehl_ps(max1, max1));\n\
     max1 = _mm_max_ss(max1, _mm_movehdup_ps(max1));\n\
-    float scales = 127 / _mm_cvtss_f32(max1);\n\
+    float max_val = _mm_cvtss_f32(max1);\n\
+    float scales = max_val > 0 ? 127 / max_val : 0.0f;\n\
     *lut_scales = scales;\n\
 #endif\n\
     return 0;\n\
@@ -502,7 +503,7 @@ int32_t three_qgemm_lut_{0}(void* A, void* sign, void* LUT, void* Scales, void* 
     for (int bs = 0; bs < BATCH_SIZE; bs++) {{\n\
 #pragma unroll\n\
         for (int i = 0; i < BM{0}; i++) {{\n\
-            ((int32_t*)C)[i] = (int32_t)(((int32_t*)CBits)[i + bs * BM{0}]);\n\
+            ((int32_t*)C)[i + bs * BM{0}] = (int32_t)(((int32_t*)CBits)[i + bs * BM{0}]);\n\
         }}\n\
   }}\n\
   return 0;\n\
@@ -520,8 +521,8 @@ int32_t two_qgemm_lut_{0}(void* A, void* LUT, void* Scales, void* LUT_Scales, vo
     for (int bs = 0; bs < BATCH_SIZE; bs++) {{\n\
 #pragma unroll\n\
         for (int i = 0; i < BM{0}; i++) {{\n\
-            ((int32_t*)C)[i] += (int32_t)(((int32_t*)CBits)[i + bs * BM{0}]);\n\
-            ((float*)C)[i] = (float)(((int32_t*)C)[i]) / ((float*)LUT_Scales)[bs] * ((float*)Scales)[0];\n\
+            ((int32_t*)C)[i + bs * BM{0}] += (int32_t)(((int32_t*)CBits)[i + bs * BM{0}]);\n\
+            ((float*)C)[i + bs * BM{0}] = (float)(((int32_t*)C)[i + bs * BM{0}]) / ((float*)LUT_Scales)[bs] * ((float*)Scales)[0];\n\
         }}\n\
     }}\n\
   return 0;\n\
@@ -653,6 +654,13 @@ if __name__ == "__main__":
     tbl_impl_code = []
     k_list = []
 
+    assert(len(BM_list) == len(BK_list) == len(bm_list) == len(kernel_shapes)), "number of BM / BK / bm shoud be {}".format(len(kernel_shapes))
+
+    for i in range(len(kernel_shapes)):
+        assert kernel_shapes[i][0] % BM_list[i] == 0, "M %% BM should be 0"
+        assert (kernel_shapes[i][1] % BK_list[i]) % 32 == 0, "K %% BK %% 32 should be 0"
+        assert bm_list[i] in [32], "choose bm from [32]"
+
     for i in range(len(kernel_shapes)):
         k_list.append(get_three_k_two_k(kernel_shapes[i][1], BK_list[i]))
 
@@ -660,13 +668,6 @@ if __name__ == "__main__":
         tbl_impl_code.append(
             gen_tbl_impl("{}_{}".format(kernel_shapes[i][0], kernel_shapes[i][1]), BM_list[i], BK_list[i], bm_list[i], k_list[i])
         )
-
-    assert(len(BM_list) == len(BK_list) == len(bm_list) == len(kernel_shapes)), "number of BM / BK / bm shoud be {}".format(len(kernel_shapes))
-    
-    for i in range(len(kernel_shapes)):
-        assert kernel_shapes[i][0] % BM_list[i] == 0, "M %% BM should be 0"
-        assert (kernel_shapes[i][1] % BK_list[i]) % 32 == 0, "K %% BK %% 32 should be 0"
-        assert bm_list[i] in [32], "choose bm from [32]"
 
     ctor_code = gen_ctor_code()
     api_code = gen_top_api(kernel_shapes, k_list)

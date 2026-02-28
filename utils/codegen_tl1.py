@@ -37,7 +37,8 @@ void per_tensor_quant(int k, void* lut_scales_, void* b_) {{\n\
       float32x4_t abssum = vabsq_f32(vec_bs);\n\
       temp_max = vmaxq_f32(abssum, temp_max);\n\
     }}\n\
-    float32_t scales = 127 / vmaxvq_f32(temp_max);\n\
+    float32_t max_val = vmaxvq_f32(temp_max);\n\
+    float32_t scales = max_val > 0 ? 127 / max_val : 0.0f;\n\
     *lut_scales = scales;\n\
 #elif defined __AVX2__\n\
     __m256 max_vec = _mm256_set1_ps(0.f);\n\
@@ -51,7 +52,8 @@ void per_tensor_quant(int k, void* lut_scales_, void* b_) {{\n\
     __m128 max1 = _mm_max_ps(_mm256_extractf128_ps(max_vec, 1), _mm256_castps256_ps128(max_vec));\n\
     max1 = _mm_max_ps(max1, _mm_movehl_ps(max1, max1));\n\
     max1 = _mm_max_ss(max1, _mm_movehdup_ps(max1));\n\
-    float scales = 127 / _mm_cvtss_f32(max1);\n\
+    float max_val = _mm_cvtss_f32(max1);\n\
+    float scales = max_val > 0 ? 127 / max_val : 0.0f;\n\
     *lut_scales = scales;\n\
 #endif\n\
 }}\n\
@@ -156,6 +158,13 @@ inline void lut_ctor(int8_t* qlut, bitnet_float_type* b, bitnet_float_type* lut_
         vec_lut[7] = vec_bs_0;\n\
         vec_lut[8] = vec_bs_0;\n\
         vec_lut[8] = vec_lut[8] + vec_bs_1;\n\
+        vec_lut[9] = vdupq_n_s16(0);\n\
+        vec_lut[10] = vdupq_n_s16(0);\n\
+        vec_lut[11] = vdupq_n_s16(0);\n\
+        vec_lut[12] = vdupq_n_s16(0);\n\
+        vec_lut[13] = vdupq_n_s16(0);\n\
+        vec_lut[14] = vdupq_n_s16(0);\n\
+        vec_lut[15] = vdupq_n_s16(0);\n\
         Transpose_8_8(&(vec_lut[0]), &(vec_lut[1]), &(vec_lut[2]), &(vec_lut[3]),\n\
                       &(vec_lut[4]), &(vec_lut[5]), &(vec_lut[6]), &(vec_lut[7]));\n\
         Transpose_8_8(&(vec_lut[8]), &(vec_lut[9]), &(vec_lut[10]), &(vec_lut[11]),\n\
@@ -249,8 +258,8 @@ inline void tbl_impl_{0}(int32_t* c, int8_t* lut, uint8_t* a) {{\n\
 #pragma unroll\n\
     for (int i = 0; i < BM{}; i += {}) {{\n\
         #pragma unroll\n\
-        for (int i=0; i<{}; i++) {{\n\
-            vec_c[i] = vandq_s16(vec_c[i], vec_zero);\n\
+        for (int ci=0; ci<{}; ci++) {{\n\
+            vec_c[ci] = vandq_s16(vec_c[ci], vec_zero);\n\
         }}\n".format(pre, bm, bm // 8)
 
     body_core_pre_code = "\n\
