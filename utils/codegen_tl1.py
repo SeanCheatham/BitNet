@@ -1,6 +1,7 @@
 import argparse
 import os
-from configparser import ConfigParser
+
+from codegen_common import gen_transform_code, write_kernel_config
 
 def gen_ctor_code():
     kernel_code = "\n\
@@ -318,54 +319,6 @@ void preprocessor_k(void* B, void* LUT_Scales, void* QLUT) {{\n\
 }}\n"
     return kernel_code
 
-def gen_transform_code(kernel_shapes):
-    kernel_code = "\n\
-void ggml_bitnet_transform_tensor(struct ggml_tensor * tensor, float scale) {\n\
-    if (!(is_type_supported(tensor->type) && tensor->backend == GGML_BACKEND_TYPE_CPU && tensor->extra == nullptr)) {\n\
-        return;\n\
-    }\n\
-\n\
-    int k = tensor->ne[0];\n\
-    int m = tensor->ne[1];\n\
-    const int lut_scales_size = 1;\n\
-    const int scales_size = 1;\n\
-    int bk = 0;\n\
-    int bm = 0;\n"
-
-    kernel_code = "".join([kernel_code, "\n\
-    if (m == {0} && k == {1}) {{\n\
-        bm = BM{0}_{1};\n\
-        bk = BBK{0}_{1};\n\
-    }}\n".format(kernel_shapes[0][0], kernel_shapes[0][1])])
-
-    for i in range(1, len(kernel_shapes)):
-        kernel_code = "".join([kernel_code, "else if (m == {0} && k == {1}) {{\n\
-        bm = BM{0}_{1};\n\
-        bk = BBK{0}_{1};\n\
-    }}\n".format(kernel_shapes[i][0], kernel_shapes[i][1])])
-
-    kernel_code = "".join([kernel_code, "\n\
-    const int n_tile_num = m / bm;\n\
-    const int BK = bk;\n\
-    uint8_t * qweights;\n\
-    bitnet_float_type * scales;\n\
-\n\
-    scales = (bitnet_float_type *) aligned_malloc(sizeof(bitnet_float_type));\n\
-    qweights = (uint8_t *) tensor->data;\n\
-    scales[0] = (bitnet_float_type) scale;\n\
-\n\
-    tensor->extra = bitnet_tensor_extras + bitnet_tensor_extras_index;\n\
-    bitnet_tensor_extras[bitnet_tensor_extras_index++] = {\n\
-        /* .lut_scales_size = */ lut_scales_size,\n\
-        /* .BK              = */ BK,\n\
-        /* .n_tile_num      = */ n_tile_num,\n\
-        /* .qweights        = */ qweights,\n\
-        /* .scales          = */ scales\n\
-    };\n\
-}\n"])
-
-    return kernel_code
-
 if __name__ == "__main__":
     from model_shapes import MODEL_SHAPES
 
@@ -416,15 +369,4 @@ if __name__ == "__main__":
         f.write(''.join(trans_code))
         f.write(''.join("#endif"))
 
-    config = ConfigParser()
-
-    for i in range(len(kernel_shapes)):
-        config.add_section('Kernels_{}'.format(i))
-        config.set('Kernels_{}'.format(i), 'M'.format(i), str(kernel_shapes[i][0]))
-        config.set('Kernels_{}'.format(i), 'K'.format(i), str(kernel_shapes[i][1]))
-        config.set('Kernels_{}'.format(i), 'BM'.format(i), str(BM_list[i]))
-        config.set('Kernels_{}'.format(i), 'BK'.format(i), str(BK_list[i]))
-        config.set('Kernels_{}'.format(i), 'bmm'.format(i), str(bm_list[i]))
-
-    with open(''.join([output_dir, "/kernel_config.ini"]), 'w') as configfile:
-        config.write(configfile)
+    write_kernel_config(kernel_shapes, BM_list, BK_list, bm_list, output_dir)
