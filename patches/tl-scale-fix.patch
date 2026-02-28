@@ -1,0 +1,45 @@
+diff --git a/src/llama.cpp b/src/llama.cpp
+index 666fcc4d..e7074fcf 100644
+--- a/src/llama.cpp
++++ b/src/llama.cpp
+@@ -5264,7 +5264,17 @@ struct llama_model_loader {
+
+             size_done += n_size;
+ #if defined(GGML_BITNET_ARM_TL1) || defined(GGML_BITNET_X86_TL2)
+-            ggml_bitnet_transform_tensor(cur);
++            {
++                float tl_scale = 0.0f;
++                std::string scale_name = std::string(ggml_get_name(cur)) + "_scale";
++                const auto * scale_weight = get_weight(scale_name.c_str());
++                if (scale_weight) {
++                    const auto & file = files.at(scale_weight->idx);
++                    file->seek(scale_weight->offs, SEEK_SET);
++                    file->read_raw(&tl_scale, sizeof(float));
++                }
++                ggml_bitnet_transform_tensor(cur, tl_scale);
++            }
+ #endif
+         }
+
+diff --git a/ggml/src/ggml.c b/ggml/src/ggml.c
+index 121f72da..40699886 100644
+--- a/ggml/src/ggml.c
++++ b/ggml/src/ggml.c
+@@ -12701,7 +12701,7 @@ static void ggml_compute_forward_mul_mat(
+             // we still need to do it here for non-model inference, e.g., test-backend-ops.cpp.
+             // It's better to do this in ggml-backend.c,
+             // but llama.cpp directly manipulates tensor.data for cbe in a lot of space.
+-            ggml_bitnet_transform_tensor(src0);
++            ggml_bitnet_transform_tensor(src0, 1.0f);
+             GGML_ASSERT(src1->type == GGML_TYPE_F32);
+             bitnet_float_type * act_input;
+             if (sizeof(bitnet_float_type) == 2) {
+@@ -12783,7 +12783,7 @@ static void ggml_compute_forward_mul_mat(
+             // we still need to do it here for non-model inference, e.g., test-backend-ops.cpp.
+             // It's better to do this in ggml-backend.c,
+             // but llama.cpp directly manipulates tensor.data for cbe in a lot of space.
+-            ggml_bitnet_transform_tensor(src0);
++            ggml_bitnet_transform_tensor(src0, 1.0f);
+             GGML_ASSERT(src1->type == GGML_TYPE_F32);
+             bitnet_float_type * act_input;
+             if (sizeof(bitnet_float_type) == 2) {

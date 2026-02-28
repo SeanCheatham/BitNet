@@ -44,4 +44,9 @@ __pycache__/
 poetry.toml
 
 build/
+build-*/
 logs/
+
+# Generated kernel headers (produced by codegen_tl1.py / codegen_tl2.py)
+include/bitnet-lut-kernels.h
+include/kernel_config.ini

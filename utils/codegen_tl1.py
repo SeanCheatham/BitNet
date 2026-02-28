@@ -320,7 +320,7 @@ void preprocessor_k(void* B, void* LUT_Scales, void* QLUT) {{\n\
 
 def gen_transform_code(kernel_shape):
     kernel_code = "\n\
-void ggml_bitnet_transform_tensor(struct ggml_tensor * tensor) {\n\
+void ggml_bitnet_transform_tensor(struct ggml_tensor * tensor, float scale) {\n\
     if (!(is_type_supported(tensor->type) && tensor->backend == GGML_BACKEND_TYPE_CPU && tensor->extra == nullptr)) {\n\
         return;\n\
     }\n\
@@ -352,8 +352,7 @@ void ggml_bitnet_transform_tensor(struct ggml_tensor * tensor) {\n\
 \n\
     scales = (bitnet_float_type *) aligned_malloc(sizeof(bitnet_float_type));\n\
     qweights = (uint8_t *) tensor->data;\n\
-    float * i2_scales = (float * )(qweights + k * m / 4);\n\
-    scales[0] = (bitnet_float_type) i2_scales[0];\n\
+    scales[0] = (bitnet_float_type) scale;\n\
 \n\
     tensor->extra = bitnet_tensor_extras + bitnet_tensor_extras_index;\n\
     bitnet_tensor_extras[bitnet_tensor_extras_index++] = {\n\
