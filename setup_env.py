@@ -177,7 +177,7 @@ def gen_code():
         elif get_model_name() == "bitnet_b1_58-3B":
             run_command([sys.executable, "utils/codegen_tl1.py", "--model", "bitnet_b1_58-3B", "--BM", "160,320,320", "--BK", "64,128,64", "--bm", "32,64,32"], log_step="codegen")
         elif get_model_name() == "BitNet-b1.58-2B-4T":
-            run_command([sys.executable, "utils/codegen_tl1.py", "--model", "bitnet_b1_58-3B", "--BM", "160,320,320", "--BK", "64,128,64", "--bm", "32,64,32"], log_step="codegen")
+            run_command([sys.executable, "utils/codegen_tl1.py", "--model", "BitNet-2B-4T", "--BM", "128,128,256,128", "--BK", "64,64,128,64", "--bm", "32,32,64,32"], log_step="codegen")
         else:
             raise NotImplementedError()
     else:
@@ -195,7 +195,7 @@ def gen_code():
         elif get_model_name() == "bitnet_b1_58-3B":
             run_command([sys.executable, "utils/codegen_tl2.py", "--model", "bitnet_b1_58-3B", "--BM", "160,320,320", "--BK", "96,96,96", "--bm", "32,32,32"], log_step="codegen")
         elif get_model_name() == "BitNet-b1.58-2B-4T":
-            run_command([sys.executable, "utils/codegen_tl2.py", "--model", "bitnet_b1_58-3B", "--BM", "160,320,320", "--BK", "96,96,96", "--bm", "32,32,32"], log_step="codegen")    
+            run_command([sys.executable, "utils/codegen_tl2.py", "--model", "BitNet-2B-4T", "--BM", "128,128,128,128", "--BK", "96,96,96,96", "--bm", "32,32,32,32"], log_step="codegen")
         else:
             raise NotImplementedError()
 
