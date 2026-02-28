@@ -104,7 +104,7 @@ def run_command(command, shell=False, log_step=None):
             subprocess.run(command, shell=shell, check=True)
         except subprocess.CalledProcessError as e:
             logging.error(f"Error occurred while running command: {e}")
-        sys.exit(1)
+            sys.exit(1)
 
 def prepare_model():
     _, arch = system_info()
@@ -209,7 +209,7 @@ def compile():
     _, arch = system_info()
     if arch not in COMPILER_EXTRA_ARGS.keys():
         logging.error(f"Arch {arch} is not supported yet")
-        exit(0)
+        sys.exit(1)
     logging.info("Compiling the code using CMake.")
     run_command(["cmake", "-B", "build", *COMPILER_EXTRA_ARGS[arch], *OS_EXTRA_ARGS.get(platform.system(), []), "-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"], log_step="generate_build_files")
     # run_command(["cmake", "--build", "build", "--target", "llama-cli", "--config", "Release"])
