@@ -662,13 +662,13 @@ def preprocess_weights_tl2(
     return weight
 
 def transform_to_tl1(x: np.ndarray):
-    scale = np.max(np.abs(x))
+    scale = np.float32(np.max(np.abs(x))).reshape(1)
     # res = np.round(x / scale + 2).astype(np.uint8)
     res = preprocess_weights_tl1(x)
     return res, scale
 
 def transform_to_tl2(x: np.ndarray):
-    scale = np.max(np.abs(x))
+    scale = np.float32(np.max(np.abs(x))).reshape(1)
     # res = np.round(x / scale + 2).astype(np.uint8)
     res = preprocess_weights_tl2(x)
     return res, scale
