@@ -50,4 +50,13 @@ grep -q 'endswith("_scale")' "$LLAMA_DIR/gguf-py/gguf/gguf_writer.py" && {
     exit 1
 }
 
+# Fix tensor count check: _scale tensors are in the GGUF but the model
+# graph never creates them, so done_getting_tensors() must exclude them.
+git -C "$LLAMA_DIR" apply "$SCRIPT_DIR/tl-scale-tensor-count.patch"
+
+grep -q 'n_aux' "$LLAMA_CPP" || {
+    echo "ERROR: TL scale tensor count patch was not applied"
+    exit 1
+}
+
 echo "Patches applied successfully."
