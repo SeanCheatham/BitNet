@@ -41,4 +41,13 @@ grep -q 'tl_scale' "$LLAMA_CPP" || {
     exit 1
 }
 
+# Fix GGUF writer: include _scale tensors as named tensor entries so
+# llama.cpp can look them up at model load time (pairs with tl-scale-fix).
+git -C "$LLAMA_DIR" apply "$SCRIPT_DIR/gguf-write-scale-tensors.patch"
+
+grep -q 'endswith("_scale")' "$LLAMA_DIR/gguf-py/gguf/gguf_writer.py" && {
+    echo "ERROR: gguf-write-scale-tensors patch was not applied"
+    exit 1
+}
+
 echo "Patches applied successfully."

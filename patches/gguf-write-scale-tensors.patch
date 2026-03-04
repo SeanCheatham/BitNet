@@ -1,0 +1,35 @@
+diff --git a/gguf-py/gguf/gguf_writer.py b/gguf-py/gguf/gguf_writer.py
+index 855cac23..822edf83 100644
+--- a/gguf-py/gguf/gguf_writer.py
++++ b/gguf-py/gguf/gguf_writer.py
+@@ -222,7 +222,7 @@ class GGUFWriter:
+         for fout, tensors, kv_data in zip(self.fout, self.tensors, self.kv_data):
+             fout.write(self._pack("<I", GGUF_MAGIC, skip_pack_prefix = True))
+             fout.write(self._pack("I", GGUF_VERSION))
+-            fout.write(self._pack("Q", len([k for k in tensors.keys() if not k.endswith("_scale")])))
++            fout.write(self._pack("Q", len(tensors)))
+             fout.write(self._pack("Q", len(kv_data)))
+             fout.flush()
+         self.state = WriterState.HEADER
+@@ -254,8 +254,6 @@ class GGUFWriter:
+             offset_tensor = 0
+ 
+             for name, ti in tensors.items():
+-                if name.endswith("_scale"):
+-                    continue
+                 ti_data += self._pack_val(name, GGUFValueType.STRING, add_vtype=False)
+                 n_dims = len(ti.shape)
+                 ti_data += self._pack("I", n_dims)
+@@ -263,11 +261,7 @@ class GGUFWriter:
+                     ti_data += self._pack("Q", ti.shape[n_dims - 1 - j])
+                 ti_data += self._pack("I", ti.dtype)
+                 ti_data += self._pack("Q", offset_tensor)
+-                dtype = ti.dtype
+-                if ti.dtype == GGMLQuantizationType.TL1 or dtype == GGMLQuantizationType.TL2:
+-                    offset_tensor += GGUFWriter.ggml_pad(ti.nbytes, self.data_alignment) + self.data_alignment
+-                else:
+-                    offset_tensor += GGUFWriter.ggml_pad(ti.nbytes, self.data_alignment)
++                offset_tensor += GGUFWriter.ggml_pad(ti.nbytes, self.data_alignment)
+ 
+             fout.write(ti_data)
+             fout.flush()
