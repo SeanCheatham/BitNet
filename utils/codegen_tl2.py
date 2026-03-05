@@ -503,7 +503,7 @@ int32_t three_qgemm_lut_{0}(void* A, void* sign, void* LUT, void* Scales, void* 
     for (int bs = 0; bs < BATCH_SIZE; bs++) {{\n\
 #pragma unroll\n\
         for (int i = 0; i < BM{0}; i++) {{\n\
-            ((int32_t*)C)[i + bs * BM{0}] = (int32_t)(((int32_t*)CBits)[i + bs * BM{0}]);\n\
+            ((int32_t*)C)[i + bs * {3}] = (int32_t)(((int32_t*)CBits)[i + bs * BM{0}]);\n\
         }}\n\
   }}\n\
   return 0;\n\
@@ -521,14 +521,14 @@ int32_t two_qgemm_lut_{0}(void* A, void* LUT, void* Scales, void* LUT_Scales, vo
     for (int bs = 0; bs < BATCH_SIZE; bs++) {{\n\
 #pragma unroll\n\
         for (int i = 0; i < BM{0}; i++) {{\n\
-            ((int32_t*)C)[i + bs * BM{0}] += (int32_t)(((int32_t*)CBits)[i + bs * BM{0}]);\n\
-            ((float*)C)[i + bs * BM{0}] = (float)(((int32_t*)C)[i + bs * BM{0}]) / ((float*)LUT_Scales)[bs] * ((float*)Scales)[0];\n\
+            ((int32_t*)C)[i + bs * {3}] += (int32_t)(((int32_t*)CBits)[i + bs * BM{0}]);\n\
+            ((float*)C)[i + bs * {3}] = (float)(((int32_t*)C)[i + bs * {3}]) / ((float*)LUT_Scales)[bs] * ((float*)Scales)[0];\n\
         }}\n\
     }}\n\
   return 0;\n\
 }}\n\
 \n\
-".format(pre, k_list[1], k_list[0])])
+".format(pre, k_list[1], k_list[0], int(pre.split('_')[0]))])
     return kernel_code
 
 def gen_top_api(kernel_shapes, k_list):
