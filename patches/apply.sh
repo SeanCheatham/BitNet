@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 LLAMA_DIR="$REPO_DIR/3rdparty/llama.cpp"
 LLAMA_CPP="$LLAMA_DIR/src/llama.cpp"
+GGML_C="$LLAMA_DIR/ggml/src/ggml.c"
 
 if [ ! -f "$LLAMA_CPP" ]; then
     echo "ERROR: llama.cpp not found at $LLAMA_CPP"
@@ -56,6 +57,42 @@ git -C "$LLAMA_DIR" apply "$SCRIPT_DIR/tl-scale-tensor-count.patch"
 
 grep -q 'n_aux' "$LLAMA_CPP" || {
     echo "ERROR: TL scale tensor count patch was not applied"
+    exit 1
+}
+
+# Fix ggml_nbytes for TL2: use correct three/two split based on BK=96
+# instead of hardcoded two_k=256 which over-reports tensor size.
+python3 -c "
+import sys
+with open('$GGML_C', 'r') as f:
+    content = f.read()
+old = '            nbytes = (tensor->ne[0] - 256) * tensor->ne[1] / 3 * 5 / 8 + 256 * tensor->ne[1] / 2 * 4 / 8;'
+new = '''            // TL2 splits K into base-3 (three_k) and base-2 (two_k) parts.
+            // BK=96 is the fixed block size for TL2 base-3 encoding.
+            const size_t K = tensor->ne[0];
+            const size_t M = tensor->ne[1];
+            const size_t three_k = (K / 96) * 96;
+            const size_t two_k = K - three_k;
+            nbytes = three_k * M / 3 * 5 / 8 + two_k * M / 2 * 4 / 8;'''
+if old not in content:
+    print('ERROR: ggml_nbytes TL2 formula not found in ggml.c', file=sys.stderr)
+    sys.exit(1)
+content = content.replace(old, new)
+with open('$GGML_C', 'w') as f:
+    f.write(content)
+"
+
+grep -q 'three_k = (K / 96)' "$GGML_C" || {
+    echo "ERROR: TL2 nbytes fix was not applied"
+    exit 1
+}
+
+# Fix two_qlut offset in bs32/bs8/bs1 paths: use two_k/2 (base-2 encoding)
+# instead of two_k/3 (base-3, which is wrong for the two-part LUT).
+sedi 's|two_k / 3 \* 32|two_k / 2 * 32|g' "$GGML_C"
+
+grep -q 'two_k / 3' "$GGML_C" && {
+    echo "ERROR: TL2 two_qlut offset fix was not applied"
     exit 1
 }
 
